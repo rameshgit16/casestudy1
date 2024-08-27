@@ -7,7 +7,7 @@ tools {
   stages{
       stage ("cleanup workspace") {
              steps {
-              Cleanws()
+              CleanWs()
             }
       }
  stage("checkout from SCM") {
