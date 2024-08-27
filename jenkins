@@ -15,7 +15,7 @@ tools {
         git branch: 'main' , credentialsId: 'github' , url: 'https://github.com/rameshgit16/casestudy1.git'
         }
    }
-Stage ("Build application") {
+stage ("Build application") {
         steps {
              sh "mvn clean package"
              }
