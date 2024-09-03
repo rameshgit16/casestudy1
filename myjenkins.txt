@@ -1,9 +1,12 @@
 pipeline {
     agent any
 environment {
-SONAR_TOKEN = credentials('sonarqube-token')
 IMAGE_NAME = 'ramesh316/sample'
         TAG = 'latest'
+        EKS_CLUSTER = 'my-eks-cluster'
+        DEV_NAMESPACE = 'dev'
+        QA_NAMESPACE = 'qa'
+        PROD_NAMESPACE = 'production'
 }
   stages{
         stage("Cleanup Workspace"){
@@ -41,8 +44,6 @@ stage('Build Docker Image') {
                 }
             }
         }
-
-   
  stage('Push Docker Image') {
             steps {
                 script {
@@ -59,6 +60,46 @@ stage('Build Docker Image') {
                 sh "trivy image ${IMAGE_NAME}:${TAG}"
            }
         }
-     }
-  }
+   }
+
+ stage('Deploy to EKS') {
+            parallel {
+                stage('Deploy to Dev') {
+                    steps {
+                        sh "kubectl config use-context $EKS_CLUSTER"
+                        sh "kubectl apply -f dev-deployment.yaml"
+                    }
+                }
+                stage('Deploy to QA') {
+                    steps {
+                        sh "kubectl config use-context $EKS_CLUSTER"
+                        sh "kubectl apply -f qa-deployment.yaml"
+                    }
+                }
+                stage('Deploy to Production') {
+                    when {
+                        branch 'main'
+                    }
+                    steps {
+                        input 'Proceed with deploying to production?'
+                        sh "kubectl config use-context $EKS_CLUSTER"
+                        sh "kubectl apply -f prod-deployment.yaml"
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            script {
+                def coverage = sh(script: 'mvn jacoco:report | grep "Total instruction coverage"', returnStdout: true).trim()
+                if (coverage.contains('80%')) {
+                    emailext body: "Code coverage reached 80%: ${coverage}",
+                        subject: "Code Coverage Alert",
+                        to: "mo.ramesh16@gmail.com.com"
+                }
+            }
+        }
+    }
 }
