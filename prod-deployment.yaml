@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pet-clinic-prod
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pet-clinic
+      environment: production
+  template:
+    metadata:
+      labels:
+        app: pet-clinic
+        environment: production
+    spec:
+      containers:
+      - name: pet-clinic
+        image: ramesh316/sample:latest
+        ports:
+        - containerPort: 8080
